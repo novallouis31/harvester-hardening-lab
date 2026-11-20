@@ -1,0 +1,11 @@
+{
+  "vm_name": "harvester",
+  "ssh": {"host": "127.0.0.1", "port": 2224, "user": "rancher"},
+  "snapshots": ["pristine", "pre-hardening", "pre-upgrade"],
+  "guest_scripts": {
+    "audit": "audit-harvester.sh",
+    "apply": "apply-harvester.sh",
+    "deharden": "deharden-harvester.sh",
+    "func": "func-test-harvester.sh"
+  }
+}

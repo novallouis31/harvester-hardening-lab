@@ -21,9 +21,27 @@ Détails et liens : `docs/RESEARCH.md`.
 ```
 vendor/CaC-Tracking/   outil SUSE de validation OpenSCAP (clone, licence GPL-3.0)
 docs/                  recherche, état VM, plan de test
-guest/                 scripts invité (à écrire après installation)
-scripts/               orchestrateur hôte (à écrire après installation)
+guest/                 scripts invité : audit, apply (RKE2 CIS + sysctl + PSA),
+                       deharden, func-test — syntaxe validée, PAS encore testés
+                       sur la VM (installation en cours)
+scripts/hv.py          orchestrateur hôte : info, snapshot, run, harden, deharden, report
 ```
+
+## Utilisation prévue (dès que la VM sera installée)
+
+```bash
+python scripts/hv.py info
+python scripts/hv.py snapshot take pristine
+python scripts/hv.py run --phase baseline
+python scripts/hv.py harden --level 1 --dry-run
+python scripts/hv.py harden --level 1
+python scripts/hv.py run --phase verify
+python scripts/hv.py deharden --dry-run
+python scripts/hv.py deharden
+python scripts/hv.py report --title "Harvester L1" --dirs artifacts/<baseline> artifacts/<verify>
+```
+
+Le niveau 1 applique les contrôles RKE2 CIS (profil, TLS, RBAC, audit, PSA, sysctl, compte `etcd`) de façon persistante via `/oem/90_custom.yaml` ; le niveau 2 ajoute le durcissement SSH. Le dé-hardening restaure le fichier OEM sauvegardé et supprime les fichiers créés. **Ces scripts n'ont pas encore été exécutés sur un nœud Harvester.**
 
 ## Prochaines étapes
 
