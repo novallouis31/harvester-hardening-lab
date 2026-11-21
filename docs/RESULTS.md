@@ -38,3 +38,7 @@ Le dé-hardening a été validé en dry-run à chaque étape (restauration du OE
 Longhorn encryption at rest (nécessite une clé via kubectl), réseaux séparés/VPN, physical/IPMI, et les contrôles TLS/cipher/PSA/account-credentials désormais gérés par le profil `cis` de RKE2.
 
 Rapport de diff : `reports/report-harvester-l2-final.md`.
+
+## Montée de version — tentative infructueuse
+
+La montée v1.9.1 → v1.10.0-rc3 n'a **pas pu être testée** : l'hôte Windows était à 0 Go libre sur ses deux disques, ce qui a provoqué des erreurs `VERR_DISK_FULL` dans le VDI VirtualBox et mis la VM en pause. Voir `docs/UPGRADE-PLAN.md` pour le journal complet et les actions de remédiation (ISO supprimées, NVRAM régénéré, VM passée à 8 vCPU/16 Go). À reprendre après avoir libéré suffisamment d'espace disque sur l'hôte.
