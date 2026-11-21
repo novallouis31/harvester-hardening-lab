@@ -41,4 +41,10 @@ Rapport de diff : `reports/report-harvester-l2-final.md`.
 
 ## Montée de version — tentative infructueuse
 
-La montée v1.9.1 → v1.10.0-rc3 n'a **pas pu être testée** : l'hôte Windows était à 0 Go libre sur ses deux disques, ce qui a provoqué des erreurs `VERR_DISK_FULL` dans le VDI VirtualBox et mis la VM en pause. Voir `docs/UPGRADE-PLAN.md` pour le journal complet et les actions de remédiation (ISO supprimées, NVRAM régénéré, VM passée à 8 vCPU/16 Go). À reprendre après avoir libéré suffisamment d'espace disque sur l'hôte.
+La montée v1.9.1 → v1.10.0-rc3 a été **tentée à trois reprises sans aboutir** :
+
+1. Disque hôte saturé (0 Go libre) → `VERR_DISK_FULL`, VM suspendue.
+2. Après libération de 96 Go : upgrade créé mais bloqué car la restauration du snapshot avait remis la VM à 5 Go RAM / 3 CPU (`containerd` ne démarrait pas). VM repassée à 24 Go / 8 CPU.
+3. Le webhook Harvester refuse alors l'upgrade : `clusters.cluster.x-k8s.io "local" not found`. Le cluster CAPI `fleet-local/local` a disparu, bundles Fleet en `ErrApplied`, `capi-controller-manager` en boucle de redémarrage.
+
+**État final : Harvester v1.9.1**, upgrade non effectué, cluster structurellement endommagé. Le durcissement L2 reste la dernière configuration validée (19 PASS / 0 FAIL, 12/12 tests). Voir `docs/UPGRADE-PLAN.md` pour le journal détaillé et la recommandation de redéploiement.

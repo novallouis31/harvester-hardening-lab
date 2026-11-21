@@ -43,3 +43,14 @@ Tentatives du 21 novembre 2026 :
 **Conclusion** : l'upgrade n'a pas échoué à cause du lab ou du script de hardening, mais à cause de la saturation disque de l'hôte qui a corrompu/suspendu le VDI. À reprendre après libération d'au moins ~50 Go sur l'hôte (le VDI Harvester occupe ~38,5 Go et doit pouvoir croître pendant l'upgrade).
 
 Le snapshot `pre-upgrade` n'a pas pu être créé (le script a expiré avant cette étape) ; seul `pre-hardening` existe. Le durcissement L2 validé plus haut reste la dernière configuration de référence.
+
+## Deuxième tentative (après libération de 96 Go sur l'hôte, 21 nov. soir)
+
+- Snapshot `pre-upgrade` créé (UUID `9790873e`), objets `Version v1.10.0-rc3` et `Upgrade hvst-upgrade-m87v2` créés avec succès.
+- **Nouveau blocage** : la restauration du snapshot `pre-upgrade` avait remis la VM à 5 Go RAM / 3 CPU → `containerd` ne démarrait pas (`connection refused`), l'Upgrade restait sans `status`. VM repassée à **24 Go / 8 CPU**.
+- Upgrade `hvst-upgrade-55wnd` créé, mais le moniteur a faussement conclu à `Complete` en lisant `Completed: Unknown` (condition indéfinie, état réel `PreparingLoggingInfra`). Le nœud est resté en v1.9.1.
+- Troisième tentative après nettoyage des pods `helm-operation` en erreur : le webhook `validator.harvesterhci.io` **refuse la création de l'Upgrade** :
+  `can't find fleet-local/local cluster, err: clusters.cluster.x-k8s.io "local" not found`.
+- Diagnostic final : `kubectl get clusters.cluster.x-k8s.io -A` → **No resources found**. Les bundles Fleet `mcc-harvester` et `mcc-rancher-monitoring-crd` sont en `ErrApplied`, `capi-controller-manager` redémarre en boucle. Le cluster local CAPI/Fleet a été détruit par les incidents matériels précédents.
+
+**État final** : Harvester **v1.9.1** (upgrade non effectué), cluster structurellement endommagé (cluster `fleet-local/local` absent). Le durcissement L2 reste validé (19 PASS / 0 FAIL, 12/12 tests) mais n'a pas pu être rejoué après l'upgrade. Pour reprendre, il faut **redéployer Harvester à partir de zéro** (ISO v1.10.x) puis rejouer le cycle hardening — la simple restauration de snapshot ne suffit plus car les objets CAPI sont perdus.
