@@ -62,15 +62,19 @@ class SSH:
         return rc, out.read().decode("utf-8", "replace"), err.read().decode("utf-8", "replace")
 
     def put(self, local: Path, remote: str, mode=0o700):
-        s = self.client.open_sftp()
-        s.put(str(local), remote)
-        s.chmod(remote, mode)
-        s.close()
+        """SFTP is not always available on SLEMicro: transfer via base64 over exec."""
+        import base64
+        data = base64.b64encode(local.read_bytes()).decode("ascii")
+        rc, out, err = self.exec(f"printf '%s' '{data}' | base64 -d > {remote} && chmod {mode:o} {remote}")
+        if rc:
+            raise RuntimeError(f"upload failed: {err[-500:]}")
 
     def get(self, remote: str, local: Path):
-        s = self.client.open_sftp()
-        s.get(remote, str(local))
-        s.close()
+        import base64
+        rc, out, err = self.exec(f"sudo base64 {remote}")
+        if rc:
+            raise RuntimeError(f"download failed: {err[-500:]}")
+        local.write_bytes(base64.b64decode("".join(out.split())))
 
 
 def vbox(*args: str) -> str:
@@ -82,7 +86,7 @@ def vbox(*args: str) -> str:
 
 def upload(ssh: SSH):
     for name in CFG["guest_scripts"].values():
-        ssh.put(ROOT / "guest" / name, "/root/hv-lab-" + name, 0o700)
+        ssh.put(ROOT / "guest" / name, "/tmp/hv-lab-" + name, 0o700)
 
 
 def stamp() -> str:
@@ -93,11 +97,11 @@ def audit(ssh: SSH, label: str, func: bool = True) -> Path:
     out = ART / f"{label}-{stamp()}"
     out.mkdir(parents=True, exist_ok=True)
     upload(ssh)
-    ssh.exec(f"bash /root/hv-lab-audit-harvester.sh /tmp/hv-audit-{label}")
+    ssh.exec(f"sudo bash /tmp/hv-lab-audit-harvester.sh /tmp/hv-audit-{label}")
     ssh.get(f"/tmp/hv-audit-{label}/audit.txt", out / "audit.txt")
     ssh.get(f"/tmp/hv-audit-{label}/checks.tsv", out / "checks.tsv")
     if func:
-        ssh.exec(f"bash /root/hv-lab-func-test-harvester.sh /tmp/hv-func-{label}")
+        ssh.exec(f"sudo bash /tmp/hv-lab-func-test-harvester.sh /tmp/hv-func-{label}")
         ssh.get(f"/tmp/hv-func-{label}/fonctionnel.txt", out / "fonctionnel.txt")
     print(f"[{label}] {out}")
     return out
@@ -109,7 +113,7 @@ def apply(ssh: SSH, level: int, dry: bool):
     if key.exists():
         ssh.put(key, "/root/hv-lab-key.pub", 0o600)
     env = f"LEVEL={level} DRY_RUN={'1' if dry else '0'}"
-    rc, o, e = ssh.exec(f"{env} sudo bash /root/hv-lab-apply-harvester.sh", timeout=1800)
+    rc, o, e = ssh.exec(f"{env} sudo bash /tmp/hv-lab-apply-harvester.sh", timeout=1800)
     print(o)
     if e.strip():
         print("stderr:", e[-1000:])
@@ -120,7 +124,7 @@ def apply(ssh: SSH, level: int, dry: bool):
 def deharden(ssh: SSH, dry: bool):
     upload(ssh)
     flag = " --dry-run" if dry else ""
-    rc, o, e = ssh.exec(f"sudo bash /root/hv-lab-deharden-harvester.sh{flag} --report /tmp/hv-deharden.md", timeout=1800)
+    rc, o, e = ssh.exec(f"sudo bash /tmp/hv-lab-deharden-harvester.sh{flag} --report /tmp/hv-deharden.md", timeout=1800)
     print(o)
     if rc:
         raise RuntimeError(f"deharden failed rc={rc}")
