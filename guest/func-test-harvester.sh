@@ -3,9 +3,11 @@
 set -u
 OUT="${1:-/tmp/hv-func}"; mkdir -p "$OUT"; : > "$OUT/fonctionnel.txt"
 t() { printf '@@TEST %s %s %s\n' "$1" "$2" "$3" | tee -a "$OUT/fonctionnel.txt"; }
-systemctl is-active rKE2-server >/dev/null 2>&1 && t FUNC.01 PASS "rKE2-server active" || t FUNC.01 FAIL "rKE2-server inactive"
-kubectl get nodes >/dev/null 2>&1 && t FUNC.02 PASS "kubectl get nodes ok" || t FUNC.02 FAIL "kubectl failed"
-kubectl get pods -A >/dev/null 2>&1 && t FUNC.03 PASS "kubectl get pods ok" || t FUNC.03 FAIL "pods list failed"
+systemctl is-active rke2-server >/dev/null 2>&1 && t FUNC.01 PASS "rke2-server active" || t FUNC.01 FAIL "rke2-server inactive"
+export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+KUBECTL=/var/lib/rancher/rke2/bin/kubectl
+"$KUBECTL" get nodes >/dev/null 2>&1 && t FUNC.02 PASS "kubectl get nodes ok" || t FUNC.02 FAIL "kubectl failed"
+"$KUBECTL" get pods -A >/dev/null 2>&1 && t FUNC.03 PASS "kubectl get pods ok" || t FUNC.03 FAIL "pods list failed"
 ss -lnt | grep -q ':6443 ' && t FUNC.04 PASS "API 6443 listening" || t FUNC.04 FAIL "no API listener"
 ss -lnt | grep -q ':22 ' && t FUNC.05 PASS "SSH 22 listening" || t FUNC.05 FAIL "no SSH"
 sshd -t >/dev/null 2>&1 && t FUNC.06 PASS "sshd config valid" || t FUNC.06 FAIL "sshd invalid"

@@ -111,9 +111,9 @@ def apply(ssh: SSH, level: int, dry: bool):
     upload(ssh)
     key = ROOT / ".keys" / "id_ed25519.pub"
     if key.exists():
-        ssh.put(key, "/root/hv-lab-key.pub", 0o600)
+        ssh.put(key, "/tmp/hv-lab-key.pub", 0o600)
     env = f"LEVEL={level} DRY_RUN={'1' if dry else '0'}"
-    rc, o, e = ssh.exec(f"{env} sudo bash /tmp/hv-lab-apply-harvester.sh", timeout=1800)
+    rc, o, e = ssh.exec(f"sudo env {env} bash /tmp/hv-lab-apply-harvester.sh", timeout=1800)
     print(o)
     if e.strip():
         print("stderr:", e[-1000:])

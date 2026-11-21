@@ -24,11 +24,21 @@ log "RESTORE $OEM <- $SRC"
 
 for f in /etc/sysctl.d/99-harvester.conf \
   /etc/rancher/rke2/config.yaml.d/52-stig.yaml \
+  /etc/rancher/rke2/audit-policy.yaml \
   /etc/rancher/rke2/config.yaml.d/51-rke2-pss-custom.yaml \
   /etc/rancher/rke2/config.yaml.d/92-harvester-kube-audit-policy.yaml \
   /etc/ssh/sshd_config.d/00-harvester-hardening.conf; do
   log "REMOVE $f"; [ "$DRY" = 1 ] || rm -f "$f"
 done
+if [ -f /tmp/hv-lab-key.pub ]; then
+  for ak in /home/rancher/.ssh/authorized_keys /root/.ssh/authorized_keys; do
+    [ -f "$ak" ] || continue
+    log "REMOVE lab key from $ak"
+    if [ "$DRY" = 1 ]; then continue; fi
+    grep -vF "$(cat /tmp/hv-lab-key.pub)" "$ak" > "$ak.new" && mv "$ak.new" "$ak"
+    chmod 600 "$ak"
+  done
+fi
 log "sysctl --system"; [ "$DRY" = 1 ] || sysctl --system >/dev/null 2>&1 || true
 if sshd -t >/dev/null 2>&1; then log "reload sshd"; [ "$DRY" = 1 ] || systemctl reload sshd 2>/dev/null || true; fi
 log "NOTE: a reboot is required for the immutable OEM config to take effect"
