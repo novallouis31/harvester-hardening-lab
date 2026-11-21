@@ -35,47 +35,26 @@ RKE2_ENTRY=$(cat <<'EOF'
   owner: 0
   group: 0
   content: |
-    profile: cis-1.23
-    use-service-account-credentials: true
+    profile: "cis"
     kube-controller-manager-arg:
     - "secure-port=10257"
     - "tls-min-version=VersionTLS12"
-    - "tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
     kube-scheduler-arg:
     - "tls-min-version=VersionTLS12"
     kube-apiserver-arg:
     - "tls-min-version=VersionTLS12"
     - "authorization-mode=RBAC,Node"
     - "anonymous-auth=false"
-    - "audit-policy-file=/etc/rancher/rke2/config.yaml.d/92-harvester-kube-audit-policy.yaml"
+    - "audit-policy-file=/etc/rancher/rke2/audit-policy.yaml"
     - "audit-log-mode=blocking-strict"
     kubelet-arg:
     - "protect-kernel-defaults=true"
-    pod-security-admission-config-file: /etc/rancher/rke2/config.yaml.d/51-rke2-pss-custom.yaml
 EOF
 )
-PSA_ENTRY=$(cat <<'EOF'
-- path: /etc/rancher/rke2/config.yaml.d/51-rke2-pss-custom.yaml
-  permissions: 600
-  owner: 0
-  group: 0
-  content: |
-    apiVersion: apiserver.config.k8s.io/v1
-    kind: AdmissionConfiguration
-    plugins:
-    - name: PodSecurity
-      configuration:
-        apiVersion: pod-security.admission.config.k8s.io/v1
-        kind: PodSecurityConfiguration
-        defaults:
-          enforce: "restricted"
-          enforce-version: "latest"
-        exemptions:
-          namespaces: [harvester-system, harvester-public, kube-system, kube-public, kube-node-lease, longhorn-system, cattle-system]
-EOF
-)
+# PSA is configured automatically by the generic "cis" profile on RKE2 v1.29+.
+PSA_ENTRY=""
 AUDIT_ENTRY=$(cat <<'EOF'
-- path: /etc/rancher/rke2/config.yaml.d/92-harvester-kube-audit-policy.yaml
+- path: /etc/rancher/rke2/audit-policy.yaml
   permissions: 600
   owner: 0
   group: 0
@@ -95,8 +74,8 @@ AUDIT_ENTRY=$(cat <<'EOF'
 EOF
 )
 COMMAND_ENTRIES=$(cat <<'EOF'
-- /usr/sbin/groupadd etcd 2>/dev/null || true
-- /usr/sbin/useradd -r -c "etcd user" -G etcd -s /sbin/nologin -M etcd 2>/dev/null || true
+- /usr/sbin/groupadd -r etcd 2>/dev/null || true
+- /usr/sbin/useradd -r -c "etcd user" -g etcd -s /sbin/nologin -M etcd 2>/dev/null || true
 - /sbin/sysctl -p /etc/sysctl.d/99-harvester.conf 2>/dev/null || true
 EOF
 )
@@ -138,7 +117,9 @@ def insert(text, key, entry):
     return '\n'.join(lines[:end] + block + lines[end:]) + '\n'
 
 for name in ('SYSCTL_ENTRY', 'RKE2_ENTRY', 'PSA_ENTRY', 'AUDIT_ENTRY'):
-    e = os.environ[name]
+    e = os.environ[name].strip()
+    if not e:
+        continue
     marker = [ln for ln in e.splitlines() if ln.startswith('- path: ')][0].split('path: ')[1]
     if marker in text:
         print('IDEMPOTENT already in OEM:', marker)
@@ -163,14 +144,27 @@ mkdir -p /etc/sysctl.d /etc/rancher/rke2/config.yaml.d
 printf '%s\n' 'vm.panic_on_oom=0' 'vm.overcommit_memory=1' 'kernel.panic=10' 'kernel.panic_on_oops=1' > /etc/sysctl.d/99-harvester.conf
 chmod 600 /etc/sysctl.d/99-harvester.conf
 printf '%s\n' "$RKE2_ENTRY" | sed -n '/content: |/,$p' | tail -n +2 | sed 's/^    //' > /etc/rancher/rke2/config.yaml.d/52-stig.yaml
-printf '%s\n' "$PSA_ENTRY" | sed -n '/content: |/,$p' | tail -n +2 | sed 's/^    //' > /etc/rancher/rke2/config.yaml.d/51-rke2-pss-custom.yaml
-printf '%s\n' "$AUDIT_ENTRY" | sed -n '/content: |/,$p' | tail -n +2 | sed 's/^    //' > /etc/rancher/rke2/config.yaml.d/92-harvester-kube-audit-policy.yaml
-chmod 600 /etc/rancher/rke2/config.yaml.d/*.yaml
+printf '%s\n' "$AUDIT_ENTRY" | sed -n '/content: |/,$p' | tail -n +2 | sed 's/^    //' > /etc/rancher/rke2/audit-policy.yaml
+chmod 600 /etc/rancher/rke2/config.yaml.d/*.yaml /etc/rancher/rke2/audit-policy.yaml
 /sbin/sysctl -p /etc/sysctl.d/99-harvester.conf 2>/dev/null || true
 /usr/sbin/groupadd etcd 2>/dev/null || true
-/usr/sbin/useradd -r -c "etcd user" -G etcd -s /sbin/nologin -M etcd 2>/dev/null || true
+/usr/sbin/useradd -r -c "etcd user" -g etcd -s /sbin/nologin -M etcd 2>/dev/null || true
 
 if [ "$LEVEL" -ge 2 ]; then
+  # Install the lab key BEFORE disabling password authentication (avoid lockout).
+  KEY=/tmp/hv-lab-key.pub
+  if [ -f "$KEY" ]; then
+    mkdir -p /home/rancher/.ssh
+    touch /home/rancher/.ssh/authorized_keys
+    chmod 700 /home/rancher/.ssh; chmod 600 /home/rancher/.ssh/authorized_keys
+    grep -qF "$(cat "$KEY")" /home/rancher/.ssh/authorized_keys || cat "$KEY" >> /home/rancher/.ssh/authorized_keys
+    mkdir -p /root/.ssh; touch /root/.ssh/authorized_keys
+    chmod 700 /root/.ssh; chmod 600 /root/.ssh/authorized_keys
+    grep -qF "$(cat "$KEY")" /root/.ssh/authorized_keys || cat "$KEY" >> /root/.ssh/authorized_keys
+    log "Lab SSH key installed for rancher and root"
+  else
+    log "WARNING: no lab key, skipping SSH hardening"
+  fi
   mkdir -p /etc/ssh/sshd_config.d
   cat > /etc/ssh/sshd_config.d/00-harvester-hardening.conf <<'EOF'
 PasswordAuthentication no
@@ -189,7 +183,7 @@ fi
 cat > /root/rollback-harvester-hardening.sh <<EOF
 #!/bin/bash
 cp -a "$BACKUP/$(basename "$OEM")" "$OEM"
-rm -f /etc/sysctl.d/99-harvester.conf /etc/rancher/rke2/config.yaml.d/{52-stig,51-rke2-pss-custom,92-harvester-kube-audit-policy}.yaml /etc/ssh/sshd_config.d/00-harvester-hardening.conf
+rm -f /etc/sysctl.d/99-harvester.conf /etc/rancher/rke2/config.yaml.d/52-stig.yaml /etc/rancher/rke2/audit-policy.yaml /etc/ssh/sshd_config.d/00-harvester-hardening.conf
 sysctl --system >/dev/null 2>&1 || true
 echo rollback done
 EOF
