@@ -1,0 +1,26 @@
+scheme_version: 1
+server_url: ""
+os:
+  hostname: harvester-lab
+  password: <MOT_DE_PASSE_LAB>
+  ssh_authorized_keys:
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF7GWE8r0OQLq0uiIW+WIK7OybL6k1wW9gySGMzR8cuJ louis@DESKTOP-V3QUF2K"
+  ntp_servers:
+    - 0.suse.pool.ntp.org
+install:
+  mode: create
+  automatic: true
+  skipchecks: true
+  device: /dev/sda
+  force_efi: true
+  management_interface:
+    interfaces:
+      - name: enp0s3
+    method: dhcp
+  harvester:
+    storage_class:
+      replica_count: 1
+    longhorn:
+      default_settings:
+        guaranteedInstanceManagerCPU: 6
+  vip_mode: dhcp
