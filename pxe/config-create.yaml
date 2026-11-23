@@ -1,0 +1,29 @@
+# Harvester v1.10 - configuration CREATE (premier noeud).
+# Secrets remplaces par des placeholders : ne jamais committer de valeurs reelles.
+scheme_version: 1
+token: <TOKEN_CLUSTER>
+os:
+  hostname: harvester-lab
+  ssh_authorized_keys:
+    - "ssh-ed25519 AAAA... lab"
+  password: <MOT_DE_PASSE_LAB>
+  ntp_servers:
+    - 0.suse.pool.ntp.org
+install:
+  mode: create
+  automatic: true
+  skipchecks: true
+  device: /dev/sda
+  management_interface:
+    interfaces:
+      - name: enp0s3
+    default_route: true
+    method: dhcp
+  iso_url: http://10.0.0.10/harvester/harvester-v1.10.0-rc3-amd64.iso
+  harvester:
+    storage_class:
+      replica_count: 1
+    longhorn:
+      default_settings:
+        guaranteedInstanceManagerCPU: 6
+  vip_mode: dhcp

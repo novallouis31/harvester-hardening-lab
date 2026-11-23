@@ -1,0 +1,23 @@
+# Harvester v1.10 - configuration JOIN (noeuds suivants).
+# server_url = VIP du cluster cree en mode CREATE. Meme token que CREATE.
+scheme_version: 1
+server_url: https://10.0.0.99:443
+token: <TOKEN_CLUSTER>
+os:
+  hostname: harvester-node2
+  ssh_authorized_keys:
+    - "ssh-ed25519 AAAA... lab"
+  password: <MOT_DE_PASSE_LAB>
+  dns_nameservers:
+    - 10.0.0.1
+install:
+  mode: join
+  automatic: true
+  skipchecks: true
+  device: /dev/sda
+  management_interface:
+    interfaces:
+      - name: enp0s3
+    default_route: true
+    method: dhcp
+  iso_url: http://10.0.0.10/harvester/harvester-v1.10.0-rc3-amd64.iso

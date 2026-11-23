@@ -1,0 +1,5 @@
+#!ipxe
+# Harvester v1.10 CREATE - UEFI (le parametre initrd= est obligatoire)
+kernel harvester-v1.10.0-rc3-vmlinuz initrd=harvester-v1.10.0-rc3-initrd ip=dhcp net.ifnames=1 rd.cos.disable rd.noverifyssl console=tty1 root=live:http://10.0.0.10/harvester/harvester-v1.10.0-rc3-rootfs-amd64.squashfs harvester.install.automatic=true harvester.install.config_url=http://10.0.0.10/harvester/config-create.yaml
+initrd harvester-v1.10.0-rc3-initrd
+boot

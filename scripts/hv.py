@@ -164,6 +164,24 @@ def report(dirs: list[Path], title: str) -> Path:
     return out
 
 
+def _pdf_cli(md=None, all_=False, docs=False, browser=None) -> int:
+    """Pont vers scripts/pdf.py (Markdown -> HTML -> PDF)."""
+    import pdf as pdf_mod
+    targets: list[Path] = []
+    if all_:
+        targets += sorted((ROOT / "reports").glob("*.md"))
+        if docs:
+            targets += sorted((ROOT / "docs").glob("*.md"))
+    elif md:
+        targets.append(Path(md).resolve())
+    else:
+        print("pdf: indiquer --md <fichier> ou --all", file=sys.stderr)
+        return 1
+    for target in targets:
+        pdf_mod.md_to_pdf(target, browser=browser)
+    return 0
+
+
 def main():
     p = argparse.ArgumentParser(prog="hv.py")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -172,7 +190,12 @@ def main():
     sr = sub.add_parser("run"); sr.add_argument("--phase", choices=["baseline", "apply", "verify", "all"], default="all"); sr.add_argument("--level", type=int, default=1); sr.add_argument("--no-func", action="store_true")
     sh = sub.add_parser("harden"); sh.add_argument("--level", type=int, default=1); sh.add_argument("--dry-run", action="store_true")
     sd = sub.add_parser("deharden"); sd.add_argument("--dry-run", action="store_true")
-    rp = sub.add_parser("report"); rp.add_argument("--title", default="Harvester hardening"); rp.add_argument("--dirs", nargs="+", required=True)
+    rp = sub.add_parser("report"); rp.add_argument("--title", default="Harvester hardening"); rp.add_argument("--dirs", nargs="+", required=True); rp.add_argument("--pdf", action="store_true", help="produire aussi le PDF")
+    pd = sub.add_parser("pdf", help="convertir un rapport Markdown en PDF")
+    pd.add_argument("--md", type=Path, default=None)
+    pd.add_argument("--all", action="store_true", help="tous les reports/*.md")
+    pd.add_argument("--docs", action="store_true", help="avec --all, inclure docs/*.md")
+    pd.add_argument("--browser", default=None)
     args = p.parse_args()
 
     if args.cmd == "snapshot":
@@ -183,8 +206,12 @@ def main():
         else:
             print(vbox("snapshot", CFG["vm_name"], "restore", args.name))
         return
+    if args.cmd == "pdf":
+        sys.exit(_pdf_cli(args.md, args.all, args.docs, args.browser))
     if args.cmd == "report":
-        report([Path(d if d.startswith("/") or d.startswith("C:") else str(ROOT / d)) for d in args.dirs], args.title)
+        md = report([Path(d if d.startswith("/") or d.startswith("C:") else str(ROOT / d)) for d in args.dirs], args.title)
+        if args.pdf:
+            _pdf_cli(md)
         return
     with SSH() as ssh:
         if args.cmd == "info":
