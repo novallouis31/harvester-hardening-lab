@@ -4,7 +4,7 @@
 
 - VM VirtualBox `harvester`, passée de 3 vCPU / 4 Go à **8 vCPU / 16 Go** (Harvester exige 8 cœurs / 32 Go en production ; avec 3/4 Go le nœud était en `soft lockup` et bloquait au boot).
 - Disque VDI 300 Go, EFI, ISO éjectée (boot sur disque).
-- `rancher` / `<MOT_DE_PASSE_LAB>`, sudo sans mot de passe, clé ED25519 du lab installée au niveau 2.
+- Compte `rancher` (mot de passe du lab **non versionné**, voir `.local/credentials.txt`), sudo sans mot de passe, clé ED25519 du lab installée au niveau 2.
 - RKE2 `v1.36.6+rke2r1`, noyau `6.12.0-160000.40-default`.
 
 ## Cycle validé (21 novembre 2026)

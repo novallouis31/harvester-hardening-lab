@@ -6,7 +6,7 @@ Après les blocages de l'ancien cluster v1.9.1 (disque hôte plein → CAPI `fle
 
 - Nouveau VDI vierge 300 Go, EFI, **24 Go RAM / 8 CPU**.
 - ISO **harvester-v1.10.0-rc3-amd64.iso** (7,92 Go). Le checksum du `version.yaml` (`90fe2325…`) ne correspond pas au fichier servi par le CDN (`f8b091fd…`), mais l'ISO est valide : `harvester-release.yaml` confirme `v1.10.0-rc3`, elle boote et l'installation aboutit.
-- Installation interactive (Yes → Create a new cluster → mot de passe `<MOT_DE_PASSE_LAB>` → disque `sda 300G` → NIC `enp0s3` → hostname `harvester-lab` → token `mycluster` → NTP par défaut → confirmation).
+- Installation interactive (Yes → Create a new cluster → mot de passe du lab (non versionné, voir `.local/credentials.txt`) → disque `sda 300G` → NIC `enp0s3` → hostname `harvester-lab` → token `mycluster` → NTP par défaut → confirmation).
 - Cluster **Ready**, `fleet-local/local` présent, aucune erreur CAPI/Fleet.
 
 ## Cycle hardening

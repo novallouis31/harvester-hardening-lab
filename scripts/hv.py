@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -26,7 +27,9 @@ def creds() -> tuple[str, str]:
             if "=" in line and not line.startswith("#"):
                 k, v = line.split("=", 1)
                 out[k.strip()] = v.strip()
-    return CFG["ssh"]["user"], out.get("password", "password")
+    # Jamais de mot de passe en dur : méthode reelle dans .local/credentials.txt
+    # (ignore par git) ou variable d'environnement LAB_HV_PASSWORD.
+    return CFG["ssh"]["user"], out.get("password", os.environ.get("LAB_HV_PASSWORD", ""))
 
 
 class SSH:

@@ -12,7 +12,7 @@
 2. Firmware passé en **EFI** (nécessaire : en BIOS l'ISO affichait « No bootable medium found »).
 3. Disque agrandi de 20 Go à **300 Go** (dynamic VDI) : l'installateur exigeait 250 Gi minimum.
 4. Installation démarrée depuis l'ISO, avec validation des avertissements matériel (3 CPU / 4 Go / pas de /dev/kvm).
-5. Mode « Create a new Harvester cluster » sélectionné, mot de passe `<MOT_DE_PASSE_LAB>` défini pour `rancher`.
+5. Mode « Create a new Harvester cluster » sélectionné, mot de passe du lab (non versionné, voir `.local/credentials.txt`) défini pour `rancher`.
 6. Disque `sda 300G`, taille persistante `150Gi` acceptés.
 7. NIC `enp0s3` cochée dans la page « Configure network » (la touche `Espace` après `Tab` fonctionne).
 

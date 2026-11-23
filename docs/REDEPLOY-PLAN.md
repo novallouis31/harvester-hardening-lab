@@ -26,7 +26,7 @@ Deux options :
 - Serveur Python `tools/serve-config.py` sur `10.0.2.2:8000` servant `docs/harvester-config.yaml`.
 - Au boot de l'ISO, dans le menu GRUB, appuyer sur `e` pour éditer la ligne de boot et ajouter :
   `harvester.install.automatic=true harvester.install.config_url=http://10.0.2.2:8000/config-create.yaml`
-  (le config contient `install.skipchecks=true`,hostname, mot de passe `<MOT_DE_PASSE_LAB>`, clé SSH, `replica_count: 1`).
+  (le config contient `install.skipchecks=true`, hostname, mot de passe du lab (non versionné), clé SSH, `replica_count: 1`).
 - L'installation se fait sans interaction, puis la VM reboot sur le disque.
 
 **B. Installation interactive** (fallback) :

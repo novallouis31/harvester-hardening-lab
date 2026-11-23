@@ -2,7 +2,7 @@ scheme_version: 1
 server_url: ""
 os:
   hostname: harvester-lab
-  password: <MOT_DE_PASSE_LAB>
+  password: <MOT_DE_PASSE_LAB>  # jamais de valeur reelle committingee ; injecter via un secret local
   ssh_authorized_keys:
     - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF7GWE8r0OQLq0uiIW+WIK7OybL6k1wW9gySGMzR8cuJ louis@DESKTOP-V3QUF2K"
   ntp_servers:
